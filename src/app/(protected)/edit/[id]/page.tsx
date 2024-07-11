@@ -3,11 +3,13 @@
 import Header from "@/app/components/Header";
 import SelectAutocomplete from "@/app/components/SelectAutoComplete";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
-const Create = () => {
+const Edit = ({ params }: { params: { id: string } }) => {
+    const router = useRouter()
   const [record, setRecord] = useState({
+    id: "",
     firstName: "",
     lastName: "",
     country: "",
@@ -19,7 +21,6 @@ const Create = () => {
     userId: "",
   });
   const [loading, setLoading] = useState<boolean>(false);
-
   const session = useSession();
   if (!session) {
     redirect("/login");
@@ -30,24 +31,40 @@ const Create = () => {
       setRecord({
         ...record,
         userId: (session && session.data?.user?.id) || "",
+        id: params.id,
       });
     }
+    const fetchRecord = async () => {
+      try {
+        const fetchRecord = await fetch(`/api/records/${params.id}`);
+        const data = await fetchRecord.json();
+        if (data.success) {
+          setRecord(data.record);
+        } else {
+          console.error(data.message);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchRecord();
   }, [session]);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const createRecord = await fetch("/api/records/create", {
+      const updateRecord = await fetch("/api/records/update", {
         method: "POST",
         body: JSON.stringify(record),
         headers: {
           "Content-Type": "application/json",
         },
       });
-      const data = await createRecord.json();
+      const data = await updateRecord.json();
       if (data.success) {
         setLoading(false);
-        redirect("/home");
+        router.push("/home");
       } else {
         setLoading(false);
         console.error(data.message);
@@ -61,7 +78,10 @@ const Create = () => {
   return (
     <div className="w-full h-full flex flex-col items-center ">
       <Header />
-      <form className="form-control w-full max-w-xs pt-5 text-xs" onSubmit={handleSubmit}>
+      <form
+        className="form-control w-full max-w-xs pt-5 text-xs"
+        onSubmit={handleSubmit}
+      >
         <div className="form-control w-full max-w-xs">
           <label className="label">
             <span className="text-xs">Country</span>
@@ -72,7 +92,7 @@ const Create = () => {
               { value: "India", label: "India" },
               { value: "Philippines", label: "Philippines" },
             ]}
-            value={record.country}
+            value={{ value: record.country, label: record.country }}
             onChange={(value) => {
               setRecord({ ...record, country: value });
             }}
@@ -90,7 +110,7 @@ const Create = () => {
               { value: "Admin", label: "Admin" },
               { value: "User", label: "User" },
             ]}
-            value={record.accountType}
+            value={{ value: record.accountType, label: record.accountType }}
             onChange={(value) => {
               setRecord({ ...record, accountType: value });
             }}
@@ -107,6 +127,7 @@ const Create = () => {
             placeholder="Username"
             className="input input-bordered w-full max-w-xs"
             onChange={(e) => setRecord({ ...record, username: e.target.value })}
+            value={record.username}
           />
         </div>
         <div className="form-control w-full max-w-xs">
@@ -120,6 +141,7 @@ const Create = () => {
             onChange={(e) =>
               setRecord({ ...record, firstName: e.target.value })
             }
+            value={record.firstName}
           />
         </div>
         <div className="form-control w-full max-w-xs">
@@ -131,6 +153,7 @@ const Create = () => {
             placeholder="Last Name"
             className="input input-bordered w-full max-w-xs"
             onChange={(e) => setRecord({ ...record, lastName: e.target.value })}
+            value={record.lastName}
           />
         </div>
         <div className="form-control w-full max-w-xs">
@@ -142,6 +165,7 @@ const Create = () => {
             placeholder="Email"
             className="input input-bordered w-full max-w-xs"
             onChange={(e) => setRecord({ ...record, email: e.target.value })}
+            value={record.email}
           />
         </div>
         <div className="form-control w-full max-w-xs">
@@ -155,6 +179,7 @@ const Create = () => {
             onChange={(e) =>
               setRecord({ ...record, contactNumber: e.target.value })
             }
+            value={record.contactNumber}
           />
         </div>
         {/* photo upload */}
@@ -167,10 +192,11 @@ const Create = () => {
             placeholder="Photo"
             className="input input-bordered w-full max-w-xs"
             onChange={(e) => setRecord({ ...record, image: e.target.value })}
+            value={record.image}
           />
         </div>
         <div className="form-control w-full max-w-xs pt-2">
-          <button className="btn btn-primary" type="submit" >
+          <button className="btn btn-primary" type="submit">
             Submit
           </button>
         </div>
@@ -180,4 +206,4 @@ const Create = () => {
   );
 };
 
-export default Create;
+export default Edit;

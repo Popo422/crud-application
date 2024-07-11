@@ -6,21 +6,20 @@ import { users } from "@/db/drizzle/schema/users";
 import { eq } from "drizzle-orm";
 import { records } from "@/db/drizzle/schema/records";
 
-export async function GET(request: Request) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     // validate email and password
-    const allRecords = await db
-      .select()
-      .from(records)
-      .innerJoin(users, eq(records.userId, users.id));
+    await db.delete(records).where(eq(records.id, params.id));
     return NextResponse.json({
       success: true,
-      records: allRecords,
-      message: "fetched all posts",
+      message: "Deleted record  successfully",
     });
   } catch (e) {
-   return console.error(e);
-    NextResponse.json({
+    console.error(e);
+    return NextResponse.json({
       success: false,
       message: "Something went wrong" + e,
     });
